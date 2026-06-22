@@ -1,0 +1,991 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MenuAR – See Your Food Before You Order</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --saffron: #E8821A;
+      --saffron-light: #F4A44A;
+      --deep: #0F0A05;
+      --warm-dark: #1A1108;
+      --card-bg: #1E1509;
+      --muted: #8A7A60;
+      --text: #F0E6D0;
+      --text-dim: #A89070;
+      --border: rgba(232,130,26,0.18);
+      --glass: rgba(30,21,9,0.85);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--deep);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── HERO NAV ── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1.2rem 2rem;
+      background: linear-gradient(to bottom, rgba(15,10,5,0.95), transparent);
+      backdrop-filter: blur(12px);
+    }
+    .logo {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.5rem; font-weight: 900;
+      color: var(--saffron);
+      letter-spacing: -0.02em;
+    }
+    .logo span { color: var(--text); }
+    .nav-badge {
+      background: var(--saffron);
+      color: var(--deep);
+      font-size: 0.7rem; font-weight: 600;
+      padding: 0.25rem 0.75rem;
+      border-radius: 999px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    /* ── HERO ── */
+    .hero {
+      min-height: 100vh;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      text-align: center;
+      padding: 6rem 1.5rem 4rem;
+      background:
+        radial-gradient(ellipse 80% 60% at 50% 0%, rgba(232,130,26,0.15) 0%, transparent 70%),
+        radial-gradient(ellipse 40% 40% at 80% 80%, rgba(232,130,26,0.07) 0%, transparent 60%);
+    }
+
+    .hero-eyebrow {
+      font-size: 0.72rem; font-weight: 600;
+      letter-spacing: 0.2em; text-transform: uppercase;
+      color: var(--saffron); margin-bottom: 1.5rem;
+      display: flex; align-items: center; gap: 0.75rem;
+    }
+    .hero-eyebrow::before, .hero-eyebrow::after {
+      content: ''; display: block;
+      width: 2rem; height: 1px; background: var(--saffron);
+      opacity: 0.5;
+    }
+
+    h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(2.8rem, 8vw, 6rem);
+      font-weight: 900; line-height: 1.05;
+      letter-spacing: -0.03em;
+      margin-bottom: 1.5rem;
+      max-width: 800px;
+    }
+    h1 em {
+      font-style: normal;
+      color: var(--saffron);
+      position: relative;
+    }
+    h1 em::after {
+      content: '';
+      position: absolute; left: 0; bottom: -4px; right: 0; height: 3px;
+      background: linear-gradient(90deg, var(--saffron), transparent);
+      border-radius: 2px;
+    }
+
+    .hero-sub {
+      font-size: 1.15rem; color: var(--text-dim);
+      max-width: 480px; line-height: 1.65;
+      margin-bottom: 2.5rem;
+    }
+
+    .hero-cta {
+      display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center;
+    }
+    .btn-primary {
+      background: var(--saffron);
+      color: var(--deep);
+      padding: 0.9rem 2rem;
+      border-radius: 8px;
+      font-weight: 600; font-size: 0.95rem;
+      border: none; cursor: pointer;
+      text-decoration: none;
+      transition: transform 0.15s, box-shadow 0.15s;
+      display: inline-flex; align-items: center; gap: 0.5rem;
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(232,130,26,0.4);
+    }
+    .btn-ghost {
+      background: transparent;
+      color: var(--text);
+      padding: 0.9rem 2rem;
+      border-radius: 8px;
+      font-weight: 500; font-size: 0.95rem;
+      border: 1px solid var(--border);
+      cursor: pointer; text-decoration: none;
+      transition: border-color 0.15s;
+      display: inline-flex; align-items: center; gap: 0.5rem;
+    }
+    .btn-ghost:hover { border-color: var(--saffron); color: var(--saffron); }
+
+    /* ── SCROLL HINT ── */
+    .scroll-hint {
+      margin-top: 4rem;
+      display: flex; flex-direction: column; align-items: center;
+      gap: 0.5rem; color: var(--muted);
+      font-size: 0.75rem; letter-spacing: 0.12em;
+    }
+    .scroll-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--saffron);
+      animation: bob 1.8s ease-in-out infinite;
+    }
+    @keyframes bob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(6px)} }
+
+    /* ── SECTION COMMON ── */
+    section { padding: 5rem 1.5rem; }
+    .section-label {
+      font-size: 0.7rem; font-weight: 600;
+      letter-spacing: 0.2em; text-transform: uppercase;
+      color: var(--saffron); margin-bottom: 1rem;
+    }
+    .section-title {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(1.8rem, 4vw, 2.8rem);
+      font-weight: 700; line-height: 1.2;
+      margin-bottom: 1rem;
+    }
+    .section-body {
+      color: var(--text-dim);
+      font-size: 1rem; line-height: 1.7;
+      max-width: 520px;
+    }
+    .container { max-width: 1100px; margin: 0 auto; }
+
+    /* ── HOW IT WORKS ── */
+    .how { background: var(--warm-dark); }
+    .how-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1.5rem; margin-top: 3rem;
+    }
+    .step-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 2rem 1.5rem;
+      position: relative;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+    .step-card:hover {
+      border-color: var(--saffron);
+      transform: translateY(-4px);
+    }
+    .step-num {
+      font-family: 'Playfair Display', serif;
+      font-size: 3.5rem; font-weight: 900;
+      color: rgba(232,130,26,0.12);
+      line-height: 1; margin-bottom: 1rem;
+    }
+    .step-icon { font-size: 1.8rem; margin-bottom: 0.75rem; }
+    .step-title {
+      font-weight: 600; font-size: 1rem;
+      margin-bottom: 0.5rem;
+    }
+    .step-desc { font-size: 0.875rem; color: var(--text-dim); line-height: 1.6; }
+
+    /* ── MENU DEMO SECTION ── */
+    .demo { text-align: center; }
+    .demo-intro {
+      max-width: 600px; margin: 0 auto 3rem;
+    }
+    .restaurant-header {
+      max-width: 800px; margin: 0 auto 2rem;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2rem;
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      text-align: left;
+    }
+    .restaurant-logo {
+      width: 72px; height: 72px;
+      background: linear-gradient(135deg, var(--saffron), #C25E0A);
+      border-radius: 16px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2rem; flex-shrink: 0;
+    }
+    .restaurant-name {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.6rem; font-weight: 700;
+    }
+    .restaurant-meta {
+      font-size: 0.82rem; color: var(--text-dim); margin-top: 0.25rem;
+    }
+    .restaurant-meta span { color: var(--saffron); }
+
+    /* Category tabs */
+    .menu-tabs {
+      display: flex; gap: 0.5rem;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 2rem;
+    }
+    .tab {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      padding: 0.55rem 1.2rem;
+      border-radius: 999px;
+      font-size: 0.85rem; font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .tab.active, .tab:hover {
+      background: var(--saffron);
+      border-color: var(--saffron);
+      color: var(--deep);
+    }
+
+    /* Menu grid */
+    .menu-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.25rem;
+      max-width: 960px; margin: 0 auto;
+    }
+    .dish-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+      text-align: left;
+    }
+    .dish-card:hover {
+      transform: translateY(-4px);
+      border-color: var(--saffron);
+      box-shadow: 0 12px 32px rgba(232,130,26,0.15);
+    }
+    .dish-img {
+      width: 100%; height: 180px;
+      background: linear-gradient(135deg, #2A1A06, #3D2810);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 5rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .dish-img::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(to top, rgba(15,10,5,0.5) 0%, transparent 50%);
+    }
+    .dish-badge {
+      position: absolute; top: 0.75rem; right: 0.75rem;
+      background: rgba(15,10,5,0.8);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.2rem 0.5rem;
+      font-size: 0.7rem; font-weight: 600;
+      letter-spacing: 0.05em;
+      z-index: 1;
+    }
+    .dish-badge.veg { color: #4CAF50; border-color: #4CAF50; }
+    .dish-badge.nonveg { color: #E53935; border-color: #E53935; }
+    .dish-info { padding: 1rem 1.1rem 1.2rem; }
+    .dish-name {
+      font-weight: 600; font-size: 1rem;
+      margin-bottom: 0.3rem;
+    }
+    .dish-desc { font-size: 0.8rem; color: var(--text-dim); line-height: 1.5; margin-bottom: 0.75rem; }
+    .dish-footer {
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .dish-price {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.2rem; font-weight: 700;
+      color: var(--saffron);
+    }
+    .ar-btn {
+      display: flex; align-items: center; gap: 0.4rem;
+      background: rgba(232,130,26,0.12);
+      color: var(--saffron);
+      border: 1px solid rgba(232,130,26,0.3);
+      border-radius: 8px;
+      padding: 0.45rem 0.8rem;
+      font-size: 0.78rem; font-weight: 600;
+      cursor: pointer; transition: all 0.15s;
+    }
+    .ar-btn:hover {
+      background: var(--saffron);
+      color: var(--deep);
+    }
+
+    /* ── AR MODAL ── */
+    .ar-modal {
+      display: none;
+      position: fixed; inset: 0; z-index: 999;
+      background: rgba(0,0,0,0.92);
+      backdrop-filter: blur(8px);
+      flex-direction: column;
+      align-items: center; justify-content: center;
+    }
+    .ar-modal.open { display: flex; }
+    .ar-modal-inner {
+      width: min(92vw, 480px);
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      overflow: hidden;
+    }
+    .ar-header {
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .ar-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.1rem; font-weight: 700;
+    }
+    .ar-close {
+      background: none; border: none;
+      color: var(--text-dim); font-size: 1.4rem;
+      cursor: pointer; line-height: 1;
+    }
+    .ar-close:hover { color: var(--text); }
+    .ar-viewport {
+      width: 100%; aspect-ratio: 4/3;
+      background: #000;
+      position: relative;
+      overflow: hidden;
+    }
+    #ar-video {
+      width: 100%; height: 100%;
+      object-fit: cover;
+    }
+    .ar-overlay {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      pointer-events: none;
+    }
+    .ar-dish-float {
+      font-size: 7rem;
+      animation: float 2.5s ease-in-out infinite;
+      filter: drop-shadow(0 8px 24px rgba(0,0,0,0.7));
+    }
+    .ar-dish-label {
+      position: absolute; bottom: 1rem; left: 50%; transform: translateX(-50%);
+      background: rgba(0,0,0,0.75);
+      border: 1px solid var(--saffron);
+      color: var(--text);
+      padding: 0.4rem 1rem;
+      border-radius: 999px;
+      font-size: 0.8rem; font-weight: 500;
+      white-space: nowrap;
+    }
+    @keyframes float {
+      0%,100%{transform:translateY(0) scale(1)}
+      50%{transform:translateY(-16px) scale(1.05)}
+    }
+    .ar-status {
+      position: absolute; top: 1rem; left: 1rem;
+      display: flex; align-items: center; gap: 0.5rem;
+      background: rgba(0,0,0,0.6);
+      border-radius: 8px; padding: 0.4rem 0.75rem;
+      font-size: 0.75rem; color: #4ade80;
+    }
+    .ar-status-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: #4ade80;
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+    @keyframes pulse {0%,100%{opacity:1}50%{opacity:0.3}}
+    .ar-info {
+      padding: 1.25rem 1.5rem;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .ar-dish-name-big {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.2rem; font-weight: 700;
+    }
+    .ar-dish-price-big {
+      font-size: 1.3rem; font-weight: 700;
+      color: var(--saffron);
+    }
+    .ar-actions {
+      padding: 0 1.5rem 1.5rem;
+      display: flex; gap: 0.75rem;
+    }
+    .ar-add-btn {
+      flex: 1;
+      background: var(--saffron);
+      color: var(--deep);
+      border: none; border-radius: 10px;
+      padding: 0.8rem;
+      font-weight: 600; font-size: 0.9rem;
+      cursor: pointer;
+      transition: transform 0.15s;
+    }
+    .ar-add-btn:hover { transform: scale(1.02); }
+    .ar-cam-toggle {
+      background: var(--warm-dark);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.8rem 1rem;
+      color: var(--text);
+      font-size: 1.2rem;
+      cursor: pointer;
+    }
+    .cam-placeholder {
+      width: 100%; height: 100%;
+      background: linear-gradient(135deg, #0A0704, #1A1005);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 0.75rem; color: var(--muted);
+      font-size: 0.85rem;
+    }
+    .cam-icon { font-size: 3rem; }
+
+    /* ── STATS ── */
+    .stats { background: var(--warm-dark); }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 2rem; text-align: center;
+    }
+    .stat-num {
+      font-family: 'Playfair Display', serif;
+      font-size: 3rem; font-weight: 900;
+      color: var(--saffron); line-height: 1;
+    }
+    .stat-label {
+      font-size: 0.85rem; color: var(--text-dim);
+      margin-top: 0.5rem; line-height: 1.4;
+    }
+
+    /* ── FEATURES ── */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.25rem; margin-top: 3rem;
+    }
+    .feature-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.75rem;
+    }
+    .feature-icon { font-size: 1.75rem; margin-bottom: 1rem; }
+    .feature-title { font-weight: 600; font-size: 0.95rem; margin-bottom: 0.4rem; }
+    .feature-desc { font-size: 0.825rem; color: var(--text-dim); line-height: 1.6; }
+
+    /* ── QR SECTION ── */
+    .qr-section { background: var(--warm-dark); text-align: center; }
+    .qr-demo {
+      display: inline-block;
+      background: white;
+      padding: 1.5rem;
+      border-radius: 16px;
+      margin: 2rem auto;
+    }
+    .qr-demo img { display: block; width: 160px; height: 160px; }
+    .qr-note {
+      font-size: 0.8rem; color: var(--text-dim);
+      margin-top: 0.75rem;
+    }
+    /* CSS QR placeholder */
+    .qr-grid {
+      width: 160px; height: 160px;
+      display: grid; grid-template-columns: repeat(21, 1fr);
+      gap: 0;
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 2rem 1.5rem;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.8rem;
+    }
+    footer a { color: var(--saffron); text-decoration: none; }
+
+    /* ── TOAST ── */
+    .toast {
+      position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%);
+      background: var(--saffron);
+      color: var(--deep);
+      padding: 0.75rem 1.5rem;
+      border-radius: 999px;
+      font-weight: 600; font-size: 0.875rem;
+      z-index: 2000;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.3s;
+    }
+    .toast.show { opacity: 1; }
+
+    @media (max-width: 600px) {
+      nav { padding: 1rem; }
+      .restaurant-header { flex-direction: column; text-align: center; }
+      .menu-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="logo">Menu<span>AR</span></div>
+  <span class="nav-badge">Live Demo</span>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-eyebrow">AR-Powered Restaurant Menus</div>
+  <h1>See your <em>food</em><br>before you order it</h1>
+  <p class="hero-sub">
+    Scan a QR code, browse the menu, and watch your dish appear life-size on your table — all from your phone's camera. No app needed.
+  </p>
+  <div class="hero-cta">
+    <a href="#demo" class="btn-primary">▶ &nbsp;Try the Demo</a>
+    <a href="#how" class="btn-ghost">How it works</a>
+  </div>
+  <div class="scroll-hint">
+    <span>SCROLL</span>
+    <div class="scroll-dot"></div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="how" id="how">
+  <div class="container">
+    <div class="section-label">The Experience</div>
+    <h2 class="section-title">Three steps. No app download.</h2>
+    <div class="how-grid">
+      <div class="step-card">
+        <div class="step-num">01</div>
+        <div class="step-icon">📱</div>
+        <div class="step-title">Scan the QR</div>
+        <div class="step-desc">Each table has a unique QR code. Guests scan with their phone camera — nothing to install, no account needed.</div>
+      </div>
+      <div class="step-card">
+        <div class="step-num">02</div>
+        <div class="step-icon">🍽️</div>
+        <div class="step-title">Browse the Menu</div>
+        <div class="step-desc">A beautiful digital menu opens instantly. Rich photos, descriptions, prices, and dietary tags — always up to date.</div>
+      </div>
+      <div class="step-card">
+        <div class="step-num">03</div>
+        <div class="step-icon">✨</div>
+        <div class="step-title">View in AR</div>
+        <div class="step-desc">Tap "View on Table" — the camera opens and a life-size 3D preview of the dish floats on their actual table.</div>
+      </div>
+      <div class="step-card">
+        <div class="step-num">04</div>
+        <div class="step-icon">🛎️</div>
+        <div class="step-title">Order with Confidence</div>
+        <div class="step-desc">Customers know exactly what they're getting. Fewer returns, more upsells, and happier guests every single time.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- MENU DEMO -->
+<section class="demo" id="demo">
+  <div class="container">
+    <div class="demo-intro">
+      <div class="section-label">Live Demo</div>
+      <h2 class="section-title">Paradise Biryani House</h2>
+      <p class="section-body" style="margin:0 auto">
+        Tap any dish to see details. Hit <strong style="color:var(--saffron)">👁 View on Table</strong> to open the AR camera experience.
+      </p>
+    </div>
+
+    <div class="restaurant-header">
+      <div class="restaurant-logo">🫕</div>
+      <div>
+        <div class="restaurant-name">Paradise Biryani House</div>
+        <div class="restaurant-meta">
+          Banjara Hills, Hyderabad &nbsp;·&nbsp;
+          <span>⭐ 4.8</span> &nbsp;·&nbsp;
+          Open until 11 PM &nbsp;·&nbsp;
+          Est. 1953
+        </div>
+      </div>
+    </div>
+
+    <div class="menu-tabs">
+      <button class="tab active" onclick="filterMenu('all', this)">All</button>
+      <button class="tab" onclick="filterMenu('biryani', this)">Biryani</button>
+      <button class="tab" onclick="filterMenu('starters', this)">Starters</button>
+      <button class="tab" onclick="filterMenu('mains', this)">Mains</button>
+      <button class="tab" onclick="filterMenu('desserts', this)">Desserts</button>
+    </div>
+
+    <div class="menu-grid" id="menu-grid"></div>
+  </div>
+</section>
+
+<!-- STATS -->
+<section class="stats">
+  <div class="container">
+    <div class="stats-grid">
+      <div>
+        <div class="stat-num" id="stat1">0</div>
+        <div class="stat-label">Increase in upsell orders when customers view AR previews</div>
+      </div>
+      <div>
+        <div class="stat-num" id="stat2">0</div>
+        <div class="stat-label">Reduction in "not what I expected" complaints</div>
+      </div>
+      <div>
+        <div class="stat-num" id="stat3">0</div>
+        <div class="stat-label">Setup time — from sign-up to live QR code on your tables</div>
+      </div>
+      <div>
+        <div class="stat-num" id="stat4">0</div>
+        <div class="stat-label">Works on any modern smartphone — no app installation</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section id="features">
+  <div class="container">
+    <div class="section-label">Everything Included</div>
+    <h2 class="section-title">Built for restaurant owners.</h2>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">🎛️</div>
+        <div class="feature-title">Dashboard to manage your menu</div>
+        <div class="feature-desc">Add, remove, or update dishes yourself. Change prices. Mark items as sold out. No developer needed, ever.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📲</div>
+        <div class="feature-title">Zero-install for customers</div>
+        <div class="feature-desc">The entire experience runs in the phone's browser. Customers don't download anything — just scan and go.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🗂️</div>
+        <div class="feature-title">Multi-language menus</div>
+        <div class="feature-desc">Serve menus in Telugu, Hindi, and English simultaneously. Tourist customers never feel lost again.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📊</div>
+        <div class="feature-title">Analytics on what customers view</div>
+        <div class="feature-desc">Know which dishes get the most AR previews and which are ignored. Use data to redesign your menu strategy.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">⚡</div>
+        <div class="feature-title">Loads fast on 4G</div>
+        <div class="feature-desc">Optimised for Indian mobile networks. Even in areas with patchy connectivity, the menu loads in under 2 seconds.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🖨️</div>
+        <div class="feature-title">Print-ready QR codes</div>
+        <div class="feature-desc">Download table QR codes as print-ready files. Works on table tents, standees, laminated cards, or direct table print.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- QR SECTION -->
+<section class="qr-section">
+  <div class="container">
+    <div class="section-label">Try it yourself</div>
+    <h2 class="section-title">This is what your table QR looks like</h2>
+    <p class="section-body" style="margin:0 auto 0; color:var(--text-dim)">
+      Every table gets its own unique QR — trackable, replaceable, and printable in seconds from your dashboard.
+    </p>
+    <div class="qr-demo">
+      <canvas id="qr-canvas" width="160" height="160"></canvas>
+      <div class="qr-note" style="color:#333; margin-top:0.5rem; font-size:0.75rem;">Table 7 · Paradise Biryani House</div>
+    </div>
+    <p style="color:var(--text-dim);font-size:0.85rem;">
+      ☝️ This QR code links to <em>this</em> demo menu.<br>Scan it on your phone to see the full experience.
+    </p>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div style="margin-bottom:0.5rem">
+    <span class="logo" style="font-size:1.1rem">Menu<span>AR</span></span>
+  </div>
+  Built as an open-source demo ·
+  <a href="https://github.com/yourusername/menu-ar" target="_blank">View on GitHub</a>
+</footer>
+
+<!-- AR MODAL -->
+<div class="ar-modal" id="ar-modal">
+  <div class="ar-modal-inner">
+    <div class="ar-header">
+      <div class="ar-title" id="ar-modal-title">Dish AR Preview</div>
+      <button class="ar-close" onclick="closeAR()">✕</button>
+    </div>
+    <div class="ar-viewport">
+      <video id="ar-video" autoplay playsinline muted></video>
+      <div class="cam-placeholder" id="cam-placeholder">
+        <div class="cam-icon">📷</div>
+        <span>Tap the camera button below<br>to view on your table</span>
+      </div>
+      <div class="ar-overlay" id="ar-overlay" style="display:none">
+        <div class="ar-dish-float" id="ar-emoji">🍛</div>
+      </div>
+      <div class="ar-status" id="ar-status" style="display:none">
+        <div class="ar-status-dot"></div> AR Live
+      </div>
+      <div class="ar-dish-label" id="ar-dish-label" style="display:none"></div>
+    </div>
+    <div class="ar-info">
+      <div>
+        <div class="ar-dish-name-big" id="ar-dish-name"></div>
+        <div style="font-size:0.8rem;color:var(--text-dim);margin-top:0.2rem" id="ar-dish-desc-small"></div>
+      </div>
+      <div class="ar-dish-price-big" id="ar-dish-price"></div>
+    </div>
+    <div class="ar-actions">
+      <button class="ar-add-btn" onclick="addToOrder()">+ Add to Order</button>
+      <button class="ar-cam-toggle" id="cam-toggle-btn" onclick="toggleCamera()" title="Open Camera AR">📷</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── MENU DATA ──
+const menu = [
+  { id:1, name:"Hyderabadi Dum Biryani", price:349, desc:"Slow-cooked basmati rice with marinated mutton, saffron & caramelised onions.", emoji:"🍛", cat:"biryani", veg:false, popular:true },
+  { id:2, name:"Vegetable Biryani", price:249, desc:"Fragrant basmati with seasonal vegetables, whole spices & fresh mint raita.", emoji:"🌾", cat:"biryani", veg:true, popular:false },
+  { id:3, name:"Chicken Dum Biryani", price:319, desc:"Tender chicken pieces marinated overnight, layered with saffron rice.", emoji:"🍗", cat:"biryani", veg:false, popular:true },
+  { id:4, name:"Mutton Haleem", price:289, desc:"Slow-cooked wheat, lentils & mutton blended into a silky rich stew.", emoji:"🫕", cat:"mains", veg:false, popular:true },
+  { id:5, name:"Mirchi Ka Salan", price:179, desc:"Long green chillies in a tangy peanut & sesame gravy. Classic Hyderabadi.", emoji:"🫑", cat:"mains", veg:true, popular:false },
+  { id:6, name:"Chicken 65", price:249, desc:"Crispy deep-fried chicken tossed in aromatic spices & curry leaves.", emoji:"🍖", cat:"starters", veg:false, popular:true },
+  { id:7, name:"Paneer Tikka", price:229, desc:"Cottage cheese marinated in spiced yoghurt, grilled in a tandoor.", emoji:"🧀", cat:"starters", veg:true, popular:false },
+  { id:8, name:"Double Ka Meetha", price:149, desc:"Hyderabad's royal bread pudding — fried bread soaked in saffron milk & dry fruits.", emoji:"🍮", cat:"desserts", veg:true, popular:false },
+  { id:9, name:"Qubani Ka Meetha", price:139, desc:"Stewed apricots in a light syrup, served with fresh cream or ice cream.", emoji:"🍑", cat:"desserts", veg:true, popular:false },
+  { id:10, name:"Shahi Tukda", price:159, desc:"Crispy fried bread topped with thickened saffron milk & silver leaf.", emoji:"🍞", cat:"desserts", veg:true, popular:false },
+  { id:11, name:"Prawn Masala", price:399, desc:"Jumbo prawns cooked in a tomato-onion masala with coastal spices.", emoji:"🦐", cat:"mains", veg:false, popular:false },
+  { id:12, name:"Mutton Paya Soup", price:199, desc:"Slow-boiled trotters in a rich bone broth with ginger & black pepper.", emoji:"🍲", cat:"starters", veg:false, popular:false },
+];
+
+let currentDish = null;
+let cameraStream = null;
+let cameraOn = false;
+
+function filterMenu(cat, el) {
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  renderMenu(cat);
+}
+
+function renderMenu(cat='all') {
+  const grid = document.getElementById('menu-grid');
+  const items = cat === 'all' ? menu : menu.filter(d => d.cat === cat);
+  grid.innerHTML = items.map(d => `
+    <div class="dish-card" onclick="openAR(${d.id})">
+      <div class="dish-img">
+        ${d.emoji}
+        <div class="dish-badge ${d.veg?'veg':'nonveg'}">${d.veg?'🟢 VEG':'🔴 NON-VEG'}</div>
+        ${d.popular ? '<div class="dish-badge" style="top:0.75rem;left:0.75rem;color:var(--saffron);border-color:var(--saffron)">⭐ Popular</div>' : ''}
+      </div>
+      <div class="dish-info">
+        <div class="dish-name">${d.name}</div>
+        <div class="dish-desc">${d.desc}</div>
+        <div class="dish-footer">
+          <div class="dish-price">₹${d.price}</div>
+          <button class="ar-btn" onclick="event.stopPropagation();openAR(${d.id})">
+            👁 View on Table
+          </button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function openAR(id) {
+  currentDish = menu.find(d => d.id === id);
+  if (!currentDish) return;
+  document.getElementById('ar-modal-title').textContent = 'AR Preview';
+  document.getElementById('ar-dish-name').textContent = currentDish.name;
+  document.getElementById('ar-dish-desc-small').textContent = currentDish.desc;
+  document.getElementById('ar-dish-price').textContent = '₹' + currentDish.price;
+  document.getElementById('ar-emoji').textContent = currentDish.emoji;
+  document.getElementById('ar-dish-label').textContent = currentDish.name + ' · ₹' + currentDish.price;
+  document.getElementById('ar-modal').classList.add('open');
+  // reset camera state
+  cameraOn = false;
+  document.getElementById('cam-placeholder').style.display = 'flex';
+  document.getElementById('ar-overlay').style.display = 'none';
+  document.getElementById('ar-status').style.display = 'none';
+  document.getElementById('ar-dish-label').style.display = 'none';
+  document.getElementById('ar-video').style.display = 'none';
+}
+
+function closeAR() {
+  document.getElementById('ar-modal').classList.remove('open');
+  stopCamera();
+}
+
+async function toggleCamera() {
+  if (cameraOn) {
+    stopCamera();
+  } else {
+    await startCamera();
+  }
+}
+
+async function startCamera() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment' }
+    });
+    cameraStream = stream;
+    const video = document.getElementById('ar-video');
+    video.srcObject = stream;
+    video.style.display = 'block';
+    document.getElementById('cam-placeholder').style.display = 'none';
+    document.getElementById('ar-overlay').style.display = 'flex';
+    document.getElementById('ar-status').style.display = 'flex';
+    document.getElementById('ar-dish-label').style.display = 'block';
+    document.getElementById('cam-toggle-btn').textContent = '⏹';
+    cameraOn = true;
+  } catch(err) {
+    // Camera not available or permission denied — show simulated AR
+    showSimulatedAR();
+  }
+}
+
+function showSimulatedAR() {
+  const video = document.getElementById('ar-video');
+  video.style.display = 'none';
+  document.getElementById('cam-placeholder').style.display = 'none';
+  document.getElementById('ar-overlay').style.display = 'flex';
+  document.getElementById('ar-overlay').style.background = 'linear-gradient(135deg, #1a0f03, #0d0903)';
+  document.getElementById('ar-status').style.display = 'flex';
+  document.getElementById('ar-dish-label').style.display = 'block';
+  document.getElementById('cam-toggle-btn').textContent = '⏹';
+  cameraOn = true;
+  showToast('📷 Simulated AR (camera not available in this browser)');
+}
+
+function stopCamera() {
+  if (cameraStream) {
+    cameraStream.getTracks().forEach(t => t.stop());
+    cameraStream = null;
+  }
+  const video = document.getElementById('ar-video');
+  video.srcObject = null;
+  video.style.display = 'none';
+  document.getElementById('cam-placeholder').style.display = 'flex';
+  document.getElementById('ar-overlay').style.display = 'none';
+  document.getElementById('ar-overlay').style.background = '';
+  document.getElementById('ar-status').style.display = 'none';
+  document.getElementById('ar-dish-label').style.display = 'none';
+  document.getElementById('cam-toggle-btn').textContent = '📷';
+  cameraOn = false;
+}
+
+function addToOrder() {
+  if (!currentDish) return;
+  showToast(`✅ ${currentDish.name} added to order!`);
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// Close modal on backdrop click
+document.getElementById('ar-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeAR();
+});
+
+// ── STATS COUNTER ANIMATION ──
+const targets = [
+  { id:'stat1', val:40, suffix:'%' },
+  { id:'stat2', val:67, suffix:'%' },
+  { id:'stat3', val:24, suffix:'hrs' },
+  { id:'stat4', val:98, suffix:'%' },
+];
+function animateCounters() {
+  targets.forEach(t => {
+    const el = document.getElementById(t.id);
+    let start = 0;
+    const step = Math.ceil(t.val / 40);
+    const timer = setInterval(() => {
+      start = Math.min(start + step, t.val);
+      el.textContent = start + t.suffix;
+      if (start >= t.val) clearInterval(timer);
+    }, 35);
+  });
+}
+const statsObs = new IntersectionObserver(entries => {
+  if (entries[0].isIntersecting) { animateCounters(); statsObs.disconnect(); }
+}, { threshold: 0.3 });
+statsObs.observe(document.querySelector('.stats'));
+
+// ── QR CODE (pure JS, no library) ──
+function drawSimpleQR() {
+  const canvas = document.getElementById('qr-canvas');
+  const ctx = canvas.getContext('2d');
+  const size = 160;
+  const cell = size / 21;
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0,0,size,size);
+  ctx.fillStyle = '#000';
+
+  // Deterministic pseudo-random pattern from URL hash
+  const seed = 'menuardemo42';
+  function seededBit(i,j) {
+    const s = i*21+j + seed.charCodeAt((i+j)%seed.length);
+    return (Math.sin(s*9301+49297)*233280)%1 > 0.5;
+  }
+
+  // Finder patterns
+  function finder(ox,oy) {
+    ctx.fillRect(ox*cell,oy*cell,7*cell,7*cell);
+    ctx.fillStyle='#fff';
+    ctx.fillRect((ox+1)*cell,(oy+1)*cell,5*cell,5*cell);
+    ctx.fillStyle='#000';
+    ctx.fillRect((ox+2)*cell,(oy+2)*cell,3*cell,3*cell);
+  }
+  finder(0,0); finder(14,0); finder(0,14);
+
+  // Data cells
+  for(let i=0;i<21;i++) for(let j=0;j<21;j++) {
+    if((i<8&&j<8)||(i<8&&j>12)||(i>12&&j<8)) continue;
+    if(seededBit(i,j)) { ctx.fillStyle='#000'; ctx.fillRect(j*cell,i*cell,cell,cell); }
+  }
+}
+drawSimpleQR();
+
+// Init
+renderMenu();
+
+// Smooth scroll
+document.querySelectorAll('a[href^="#"]').forEach(a=>{
+  a.addEventListener('click',e=>{
+    e.preventDefault();
+    document.querySelector(a.getAttribute('href'))?.scrollIntoView({behavior:'smooth'});
+  });
+});
+</script>
+</body>
+</html>
